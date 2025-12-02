@@ -46,6 +46,23 @@ export const TestForm: React.FC<TestFormProps> = ({ initialData, isOpen, onClose
     setError(null);
   }, [isOpen, initialData]);
 
+  // Handle ESC key to close
+  useEffect(() => {
+    const handleEscKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscKey);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscKey);
+    };
+  }, [isOpen, onClose]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
