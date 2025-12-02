@@ -90,12 +90,12 @@ export const JsonManager: React.FC<JsonManagerProps> = ({ testCases, onImport, o
   };
 
   return (
-    <div className="flex flex-col h-full bg-slate-900 rounded-xl border border-slate-800 overflow-hidden">
-      <div className="flex border-b border-slate-800">
+    <div className="flex flex-col h-full bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+      <div className="flex border-b border-gray-200">
         <button
           onClick={() => setActiveTab('import')}
           className={`flex-1 py-4 text-sm font-medium text-center transition-colors ${
-            activeTab === 'import' ? 'bg-slate-800 text-blue-400 border-b-2 border-blue-500' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+            activeTab === 'import' ? 'bg-gray-50 text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'
           }`}
         >
           <Upload className="w-4 h-4 inline-block mr-2" />
@@ -104,7 +104,7 @@ export const JsonManager: React.FC<JsonManagerProps> = ({ testCases, onImport, o
         <button
           onClick={() => setActiveTab('export')}
           className={`flex-1 py-4 text-sm font-medium text-center transition-colors ${
-            activeTab === 'export' ? 'bg-slate-800 text-blue-400 border-b-2 border-blue-500' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+            activeTab === 'export' ? 'bg-gray-50 text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'
           }`}
         >
           <Download className="w-4 h-4 inline-block mr-2" />
@@ -114,13 +114,13 @@ export const JsonManager: React.FC<JsonManagerProps> = ({ testCases, onImport, o
 
       <div className="flex-1 p-6 overflow-hidden flex flex-col">
         {error && (
-          <div className="mb-4 bg-red-900/20 border border-red-800/50 text-red-200 p-3 rounded-lg flex items-center text-sm">
+          <div className="mb-4 bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg flex items-center text-sm">
             <AlertTriangle className="w-4 h-4 mr-2 flex-shrink-0" />
             {error}
           </div>
         )}
         {successMsg && (
-          <div className="mb-4 bg-green-900/20 border border-green-800/50 text-green-200 p-3 rounded-lg flex items-center text-sm">
+          <div className="mb-4 bg-green-50 border border-green-200 text-green-700 p-3 rounded-lg flex items-center text-sm">
             <Check className="w-4 h-4 mr-2 flex-shrink-0" />
             {successMsg}
           </div>
@@ -129,44 +129,44 @@ export const JsonManager: React.FC<JsonManagerProps> = ({ testCases, onImport, o
         {activeTab === 'import' ? (
           <div className="flex flex-col h-full space-y-4">
              {/* AI Helper Section */}
-             <div className="bg-gradient-to-r from-blue-900/20 to-purple-900/20 border border-slate-700 rounded-lg p-4 flex items-start justify-between gap-4">
+             <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-100 rounded-lg p-4 flex items-start justify-between gap-4">
                 <div className="flex items-start gap-3">
-                  <div className="p-2 bg-blue-600/20 text-blue-400 rounded-lg">
+                  <div className="p-2 bg-blue-100 text-blue-600 rounded-lg">
                     <Bot size={18} />
                   </div>
                   <div>
-                    <h4 className="text-sm font-medium text-slate-200 flex items-center gap-2">
+                    <h4 className="text-sm font-medium text-gray-900 flex items-center gap-2">
                       Generate from Documentation
-                      <Sparkles size={12} className="text-yellow-400" />
+                      <Sparkles size={12} className="text-amber-500" />
                     </h4>
-                    <p className="text-xs text-slate-400 mt-1">
+                    <p className="text-xs text-gray-600 mt-1">
                       Copy our system prompt, paste it into an AI (like ChatGPT), then paste your product requirements. The AI will generate compatible JSON.
                     </p>
                   </div>
                 </div>
                 <button 
                   onClick={handleCopyPrompt}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-300 text-xs rounded transition-colors whitespace-nowrap"
+                  className="flex items-center gap-2 px-3 py-1.5 bg-white hover:bg-gray-50 border border-gray-300 text-gray-600 text-xs rounded transition-colors whitespace-nowrap shadow-sm"
                 >
-                  {promptCopied ? <Check size={14} className="text-green-400" /> : <Copy size={14} />}
+                  {promptCopied ? <Check size={14} className="text-green-600" /> : <Copy size={14} />}
                   {promptCopied ? 'Copied!' : 'Copy Prompt'}
                 </button>
              </div>
 
             <div className="flex-1 flex flex-col min-h-0">
-              <label className="block text-sm font-medium text-slate-400 mb-2">
+              <label className="block text-sm font-medium text-gray-600 mb-2">
                 Paste JSON Array
               </label>
               <textarea
                 value={importText}
                 onChange={(e) => setImportText(e.target.value)}
                 placeholder={`[\n  {\n    "title": "My Test Case",\n    "description": "...",\n    "input": "...",\n    "expectedOutput": "..."\n  }\n]`}
-                className="flex-1 w-full bg-slate-950 border border-slate-700 rounded-lg p-4 font-mono text-sm text-slate-300 focus:ring-2 focus:ring-blue-600 outline-none resize-none custom-scrollbar"
+                className="flex-1 w-full bg-gray-50 border border-gray-300 rounded-lg p-4 font-mono text-sm text-gray-800 focus:ring-2 focus:ring-blue-600 outline-none resize-none custom-scrollbar"
               />
             </div>
             
             <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1.5 flex items-center gap-2">
+              <label className="block text-xs font-medium text-gray-600 mb-1.5 flex items-center gap-2">
                 <Tag size={12} />
                 Add tags to all imported items (optional)
               </label>
@@ -175,7 +175,7 @@ export const JsonManager: React.FC<JsonManagerProps> = ({ testCases, onImport, o
                 value={globalTags}
                 onChange={(e) => setGlobalTags(e.target.value)}
                 placeholder="e.g. sprint-42, regression, payment-api (comma separated)"
-                className="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-2 text-slate-300 text-sm focus:ring-2 focus:ring-blue-600 outline-none"
+                className="w-full bg-white border border-gray-300 rounded-lg px-4 py-2 text-gray-900 text-sm focus:ring-2 focus:ring-blue-600 outline-none"
               />
             </div>
 
@@ -188,14 +188,14 @@ export const JsonManager: React.FC<JsonManagerProps> = ({ testCases, onImport, o
           </div>
         ) : (
           <div className="flex flex-col h-full">
-            <p className="text-slate-400 text-sm mb-3">
+            <p className="text-gray-500 text-sm mb-3">
               Current database state as JSON. Useful for backups or version control.
             </p>
             <div className="relative flex-1">
               <textarea
                 readOnly
                 value={JSON.stringify(testCases, null, 2)}
-                className="absolute inset-0 w-full h-full bg-slate-950 border border-slate-700 rounded-lg p-4 font-mono text-sm text-slate-300 focus:ring-2 focus:ring-blue-600 outline-none resize-none custom-scrollbar"
+                className="absolute inset-0 w-full h-full bg-gray-50 border border-gray-300 rounded-lg p-4 font-mono text-sm text-gray-800 focus:ring-2 focus:ring-blue-600 outline-none resize-none custom-scrollbar"
               />
             </div>
             <div className="mt-4 flex justify-end gap-3">

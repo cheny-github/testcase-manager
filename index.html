@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,35 +7,30 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
-        darkMode: 'class',
         theme: {
           extend: {
-            colors: {
-              slate: {
-                850: '#151F2E',
-                900: '#0F172A',
-                950: '#020617',
-              }
+            fontFamily: {
+              sans: ['Inter', 'system-ui', 'sans-serif'],
             }
           }
         }
       }
     </script>
     <style>
-      /* Custom Scrollbar for a dev-tool look */
+      /* Custom Scrollbar for a dev-tool look - Light Mode */
       ::-webkit-scrollbar {
         width: 8px;
         height: 8px;
       }
       ::-webkit-scrollbar-track {
-        background: #0F172A; 
+        background: #F1F5F9; /* Slate 100 */
       }
       ::-webkit-scrollbar-thumb {
-        background: #334155; 
+        background: #CBD5E1; /* Slate 300 */
         border-radius: 4px;
       }
       ::-webkit-scrollbar-thumb:hover {
-        background: #475569; 
+        background: #94A3B8; /* Slate 400 */
       }
     </style>
   <script type="importmap">
@@ -50,7 +45,7 @@
 }
 </script>
 </head>
-  <body class="bg-slate-950 text-slate-100 font-sans antialiased h-screen overflow-hidden">
+  <body class="bg-gray-50 text-gray-900 font-sans antialiased h-screen overflow-hidden">
     <div id="root" class="h-full flex flex-col"></div>
   </body>
 </html>
