@@ -17,9 +17,9 @@ Each object must adhere strictly to this structure:
 [
   {
     "title": "String (Required) - Concise summary of the test",
-    "description": "String - Detailed scenario (Given/When/Then)",
-    "input": "String - The specific input data or setup conditions (text format)",
-    "expectedOutput": "String - The expected result (text format)",
+    "description": "String - Detailed scenario",
+    "input": "String - The specific input data or setup conditions ",
+    "expectedOutput": "String - The expected result ",
     "status": "DRAFT"
   }
 ]
