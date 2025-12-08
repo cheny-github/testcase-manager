@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, AlertCircle } from 'lucide-react';
+import { X, Save, AlertCircle, Layers } from 'lucide-react';
 import { TestCase, TestStatus, NewTestCase } from '../types';
 import { Button } from './ui/Button';
 
@@ -8,16 +8,18 @@ interface TestFormProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (testCase: TestCase) => Promise<void>;
+  defaultIteration?: string; // Prop to pre-fill iteration based on current filter
 }
 
-export const TestForm: React.FC<TestFormProps> = ({ initialData, isOpen, onClose, onSave }) => {
+export const TestForm: React.FC<TestFormProps> = ({ initialData, isOpen, onClose, onSave, defaultIteration }) => {
   const [formData, setFormData] = useState<NewTestCase>({
     title: '',
     description: '',
     input: '',
     expectedOutput: '',
     status: TestStatus.DRAFT,
-    tags: []
+    tags: [],
+    iteration: ''
   });
   const [tagInput, setTagInput] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -30,7 +32,8 @@ export const TestForm: React.FC<TestFormProps> = ({ initialData, isOpen, onClose
         input: initialData.input,
         expectedOutput: initialData.expectedOutput,
         status: initialData.status,
-        tags: initialData.tags || []
+        tags: initialData.tags || [],
+        iteration: initialData.iteration || 'Unassigned'
       });
     } else if (isOpen) {
       // Reset for new entry
@@ -40,11 +43,12 @@ export const TestForm: React.FC<TestFormProps> = ({ initialData, isOpen, onClose
         input: '',
         expectedOutput: '',
         status: TestStatus.DRAFT,
-        tags: []
+        tags: [],
+        iteration: defaultIteration && defaultIteration !== 'ALL' ? defaultIteration : 'v1.0'
       });
     }
     setError(null);
-  }, [isOpen, initialData]);
+  }, [isOpen, initialData, defaultIteration]);
 
   // Handle ESC key to close
   useEffect(() => {
@@ -77,6 +81,8 @@ export const TestForm: React.FC<TestFormProps> = ({ initialData, isOpen, onClose
       const testCase: TestCase = {
         id: initialData ? initialData.id : crypto.randomUUID(),
         ...formData,
+        // Default to Unassigned if empty
+        iteration: formData.iteration.trim() || 'Unassigned',
         createdAt: initialData ? initialData.createdAt : now,
         updatedAt: now,
       };
@@ -141,27 +147,32 @@ export const TestForm: React.FC<TestFormProps> = ({ initialData, isOpen, onClose
                   />
                 </div>
                 
-                <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-1">Status</label>
-                  <div className="flex space-x-2">
-                    {Object.values(TestStatus).map(status => (
-                      <button
-                        key={status}
-                        type="button"
-                        onClick={() => setFormData({ ...formData, status })}
-                        className={`px-3 py-1.5 rounded-md text-xs font-bold border transition-colors ${
-                          formData.status === status
-                            ? status === TestStatus.PASSING ? 'bg-green-100 border-green-300 text-green-800'
-                            : status === TestStatus.FAILING ? 'bg-red-100 border-red-300 text-red-800'
-                            : status === TestStatus.SKIPPED ? 'bg-gray-200 border-gray-300 text-gray-700'
-                            : 'bg-amber-100 border-amber-300 text-amber-800'
-                            : 'bg-white border-gray-200 text-gray-500 hover:border-gray-400 hover:text-gray-700'
-                        }`}
-                      >
-                        {status}
-                      </button>
-                    ))}
-                  </div>
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-600 mb-1">Iteration / Version</label>
+                        <div className="relative">
+                            <Layers size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                            <input
+                                type="text"
+                                value={formData.iteration}
+                                onChange={e => setFormData({ ...formData, iteration: e.target.value })}
+                                className="w-full bg-white border border-gray-300 rounded-lg pl-9 pr-4 py-2 text-gray-900 focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none shadow-sm placeholder:text-gray-400"
+                                placeholder="e.g. Sprint 10"
+                            />
+                        </div>
+                    </div>
+                    <div>
+                         <label className="block text-sm font-medium text-gray-600 mb-1">Status</label>
+                         <select
+                            value={formData.status}
+                            onChange={(e) => setFormData({...formData, status: e.target.value as TestStatus})}
+                            className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-900 focus:ring-2 focus:ring-blue-600 outline-none"
+                         >
+                            {Object.values(TestStatus).map(s => (
+                                <option key={s} value={s}>{s}</option>
+                            ))}
+                         </select>
+                    </div>
                 </div>
 
                 <div>

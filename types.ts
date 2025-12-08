@@ -13,6 +13,7 @@ export interface TestCase {
   expectedOutput: string; // Stored as stringified JSON or raw text
   status: TestStatus;
   tags: string[];
+  iteration: string; // New field for version control (e.g., "v1.0", "Sprint 42")
   createdAt: number;
   updatedAt: number;
 }

@@ -9,15 +9,18 @@ import {
   XCircle, 
   Clock, 
   PlayCircle,
-  MoreVertical,
   Database,
   Tag,
-  ArrowRight
+  Layers,
+  FolderOpen,
+  LayoutDashboard,
+  ListTodo
 } from 'lucide-react';
 import { getAllTestCases, saveTestCase, deleteTestCase, bulkImportTestCases, clearAllTestCases } from './services/db';
 import { TestCase, TestStatus } from './types';
 import { TestForm } from './components/TestForm';
 import { JsonManager } from './components/JsonManager';
+import { ReportDashboard } from './components/ReportDashboard';
 import { Button } from './components/ui/Button';
 import { ConfirmDialog } from './components/ui/ConfirmDialog';
 
@@ -47,6 +50,12 @@ const App: React.FC = () => {
   const [tagSearchQuery, setTagSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<TestStatus | 'ALL'>('ALL');
   
+  // Iteration Filter State
+  const [iterationFilter, setIterationFilter] = useState<string>('ALL');
+  
+  // View Mode State
+  const [viewMode, setViewMode] = useState<'list' | 'report'>('list');
+
   // UI State
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingCase, setEditingCase] = useState<TestCase | null>(null);
@@ -144,7 +153,17 @@ const App: React.FC = () => {
     setShowJsonManager(false);
   };
 
-  const filteredCases = useMemo(() => {
+  // Derive unique iterations from the dataset
+  const uniqueIterations = useMemo(() => {
+    const iterations = new Set<string>();
+    testCases.forEach(tc => {
+        iterations.add(tc.iteration || 'Unassigned');
+    });
+    return Array.from(iterations).sort();
+  }, [testCases]);
+
+  // Filtered cases for LIST VIEW (Respects all filters)
+  const listFilteredCases = useMemo(() => {
     return testCases.filter(tc => {
       // Title or Description Search
       const searchLower = searchQuery.toLowerCase();
@@ -154,24 +173,36 @@ const App: React.FC = () => {
       
       // Tag Search
       const tagSearchLower = tagSearchQuery.toLowerCase();
-      // Ensure tags exists and is an array before calling some to handle legacy data
       const tags = Array.isArray(tc.tags) ? tc.tags : [];
       const matchesTag = !tagSearchQuery || tags.some(t => t.toLowerCase().includes(tagSearchLower));
       
+      // Status Filter
       const matchesStatus = statusFilter === 'ALL' || tc.status === statusFilter;
+
+      // Iteration Filter
+      const tcIteration = tc.iteration || 'Unassigned';
+      const matchesIteration = iterationFilter === 'ALL' || tcIteration === iterationFilter;
       
-      return matchesSearch && matchesTag && matchesStatus;
+      return matchesSearch && matchesTag && matchesStatus && matchesIteration;
     });
-  }, [testCases, searchQuery, tagSearchQuery, statusFilter]);
+  }, [testCases, searchQuery, tagSearchQuery, statusFilter, iterationFilter]);
+
+  // Filtered cases for REPORT VIEW (Respects Iteration ONLY, ignores status/search for "Overall Progress")
+  const reportFilteredCases = useMemo(() => {
+    return testCases.filter(tc => {
+       const tcIteration = tc.iteration || 'Unassigned';
+       return iterationFilter === 'ALL' || tcIteration === iterationFilter;
+    });
+  }, [testCases, iterationFilter]);
 
   const stats = useMemo(() => {
     return {
-      total: testCases.length,
-      passing: testCases.filter(t => t.status === TestStatus.PASSING).length,
-      failing: testCases.filter(t => t.status === TestStatus.FAILING).length,
-      draft: testCases.filter(t => t.status === TestStatus.DRAFT).length,
+      total: listFilteredCases.length,
+      passing: listFilteredCases.filter(t => t.status === TestStatus.PASSING).length,
+      failing: listFilteredCases.filter(t => t.status === TestStatus.FAILING).length,
+      draft: listFilteredCases.filter(t => t.status === TestStatus.DRAFT).length,
     };
-  }, [testCases]);
+  }, [listFilteredCases]);
 
   return (
     <div className="flex flex-col h-screen bg-gray-50 text-gray-900 font-sans">
@@ -212,51 +243,110 @@ const App: React.FC = () => {
       {/* Main Content Area */}
       <div className="flex flex-1 overflow-hidden">
         
-        {/* Sidebar / Stats */}
+        {/* Sidebar */}
         <aside className="w-64 bg-white border-r border-gray-200 flex-col hidden md:flex shrink-0">
-          <div className="p-6">
-            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Dashboard</h3>
-            <div className="grid grid-cols-2 gap-3 mb-6">
-              <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
-                <div className="text-2xl font-bold text-gray-800">{stats.total}</div>
-                <div className="text-xs text-gray-500">Total Cases</div>
-              </div>
-              <div className="bg-green-50 p-3 rounded-lg border border-green-100">
-                <div className="text-2xl font-bold text-green-600">{stats.passing}</div>
-                <div className="text-xs text-green-600/80">Passing</div>
-              </div>
-              <div className="bg-red-50 p-3 rounded-lg border border-red-100">
-                <div className="text-2xl font-bold text-red-600">{stats.failing}</div>
-                <div className="text-xs text-red-600/80">Failing</div>
-              </div>
-              <div className="bg-amber-50 p-3 rounded-lg border border-amber-100">
-                <div className="text-2xl font-bold text-amber-600">{stats.draft}</div>
-                <div className="text-xs text-amber-600/80">Draft</div>
-              </div>
+          <div className="p-6 flex-1 overflow-y-auto custom-scrollbar">
+            
+            {/* View Mode Toggle */}
+            <div className="bg-gray-100 p-1 rounded-lg mb-6 flex">
+                <button 
+                  onClick={() => setViewMode('list')}
+                  className={`flex-1 py-1.5 px-2 text-xs font-medium rounded-md flex items-center justify-center gap-2 transition-all ${viewMode === 'list' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
+                >
+                    <ListTodo size={14} /> List
+                </button>
+                <button 
+                  onClick={() => setViewMode('report')}
+                  className={`flex-1 py-1.5 px-2 text-xs font-medium rounded-md flex items-center justify-center gap-2 transition-all ${viewMode === 'report' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
+                >
+                    <LayoutDashboard size={14} /> Report
+                </button>
             </div>
 
-            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Quick Filters</h3>
-            <nav className="space-y-1">
-              {[
-                { label: 'All Cases', value: 'ALL', icon: Database },
-                { label: 'Passing', value: TestStatus.PASSING, icon: CheckCircle2, color: 'text-green-600' },
-                { label: 'Failing', value: TestStatus.FAILING, icon: XCircle, color: 'text-red-600' },
-                { label: 'Drafts', value: TestStatus.DRAFT, icon: Edit3, color: 'text-amber-600' },
-              ].map((item) => (
+            {/* Dashboard Stats (Visible only in List Mode) */}
+            {viewMode === 'list' && (
+                <>
+                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">
+                  Overview {iterationFilter !== 'ALL' ? `(${iterationFilter})` : ''}
+                </h3>
+                <div className="grid grid-cols-2 gap-3 mb-6">
+                  <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                    <div className="text-2xl font-bold text-gray-800">{stats.total}</div>
+                    <div className="text-xs text-gray-500">Filtered Cases</div>
+                  </div>
+                  <div className="bg-green-50 p-3 rounded-lg border border-green-100">
+                    <div className="text-2xl font-bold text-green-600">{stats.passing}</div>
+                    <div className="text-xs text-green-600/80">Passing</div>
+                  </div>
+                  <div className="bg-red-50 p-3 rounded-lg border border-red-100">
+                    <div className="text-2xl font-bold text-red-600">{stats.failing}</div>
+                    <div className="text-xs text-red-600/80">Failing</div>
+                  </div>
+                  <div className="bg-amber-50 p-3 rounded-lg border border-amber-100">
+                    <div className="text-2xl font-bold text-amber-600">{stats.draft}</div>
+                    <div className="text-xs text-amber-600/80">Draft</div>
+                  </div>
+                </div>
+                </>
+            )}
+
+            {/* Iteration Filters */}
+            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4 mt-2">Versions / Iterations</h3>
+            <nav className="space-y-1 mb-6">
                 <button
-                  key={item.value}
-                  onClick={() => setStatusFilter(item.value as TestStatus | 'ALL')}
-                  className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                    statusFilter === item.value 
-                      ? 'bg-blue-50 text-blue-600 border border-blue-200' 
-                      : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
-                  }`}
+                    onClick={() => setIterationFilter('ALL')}
+                    className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                        iterationFilter === 'ALL'
+                        ? 'bg-blue-50 text-blue-600 border border-blue-200'
+                        : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
+                    }`}
                 >
-                  <item.icon size={16} className={`mr-3 ${item.color || ''}`} />
-                  {item.label}
+                    <FolderOpen size={16} className="mr-3" />
+                    All Versions
                 </button>
-              ))}
+                {uniqueIterations.map(iter => (
+                    <button
+                        key={iter}
+                        onClick={() => setIterationFilter(iter)}
+                        className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                            iterationFilter === iter
+                            ? 'bg-blue-50 text-blue-600 border border-blue-200'
+                            : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
+                        }`}
+                    >
+                        <Layers size={16} className="mr-3 text-gray-400" />
+                        <span className="truncate">{iter}</span>
+                    </button>
+                ))}
             </nav>
+
+            {/* Status Filters - Only show in List Mode */}
+            {viewMode === 'list' && (
+                <>
+                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Status Filters</h3>
+                <nav className="space-y-1">
+                  {[
+                    { label: 'All Statuses', value: 'ALL', icon: Database },
+                    { label: 'Passing', value: TestStatus.PASSING, icon: CheckCircle2, color: 'text-green-600' },
+                    { label: 'Failing', value: TestStatus.FAILING, icon: XCircle, color: 'text-red-600' },
+                    { label: 'Drafts', value: TestStatus.DRAFT, icon: Edit3, color: 'text-amber-600' },
+                  ].map((item) => (
+                    <button
+                      key={item.value}
+                      onClick={() => setStatusFilter(item.value as TestStatus | 'ALL')}
+                      className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                        statusFilter === item.value 
+                          ? 'bg-gray-100 text-gray-900 border border-gray-300' 
+                          : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
+                      }`}
+                    >
+                      <item.icon size={16} className={`mr-3 ${item.color || ''}`} />
+                      {item.label}
+                    </button>
+                  ))}
+                </nav>
+                </>
+            )}
           </div>
           
           <div className="mt-auto p-6 border-t border-gray-200">
@@ -266,7 +356,7 @@ const App: React.FC = () => {
           </div>
         </aside>
 
-        {/* Main List Area */}
+        {/* Main Area */}
         <main className="flex-1 flex flex-col min-w-0 bg-gray-50">
           
           {showJsonManager ? (
@@ -277,6 +367,11 @@ const App: React.FC = () => {
                 onClose={() => setShowJsonManager(false)} 
               />
             </div>
+          ) : viewMode === 'report' ? (
+             <ReportDashboard 
+                testCases={reportFilteredCases} 
+                iterationName={iterationFilter === 'ALL' ? 'All Versions' : iterationFilter}
+             />
           ) : (
             <>
               {/* Filter Bar */}
@@ -319,15 +414,17 @@ const App: React.FC = () => {
                   <div className="flex items-center justify-center h-64 text-gray-500">
                     Loading database...
                   </div>
-                ) : filteredCases.length === 0 ? (
+                ) : listFilteredCases.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full text-gray-400 opacity-80">
                     <Database size={48} className="mb-4 text-gray-300" />
                     <p className="text-lg font-medium text-gray-600">No test cases found</p>
-                    <p className="text-sm">Create a new one or adjust filters</p>
+                    <p className="text-sm">
+                        {iterationFilter !== 'ALL' ? `Current Iteration: ${iterationFilter}` : 'Create a new one or adjust filters'}
+                    </p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-5">
-                    {filteredCases.map(tc => (
+                    {listFilteredCases.map(tc => (
                       <div 
                         key={tc.id} 
                         onClick={() => {
@@ -344,9 +441,10 @@ const App: React.FC = () => {
                           </span>
                           
                           <div className="flex items-center gap-2">
-                             <span className="text-[10px] text-gray-400 font-mono">
-                                {new Date(tc.updatedAt).toLocaleDateString()}
-                             </span>
+                             <div className="bg-gray-100 px-2 py-0.5 rounded text-[10px] font-medium text-gray-500 flex items-center gap-1" title="Iteration / Version">
+                                <Layers size={10} />
+                                {tc.iteration || 'Unassigned'}
+                             </div>
                              <button 
                               onClick={(e) => handleDeleteClick(tc.id, e)}
                               title="Delete Test Case"
@@ -417,6 +515,7 @@ const App: React.FC = () => {
         }}
         onSave={handleSave}
         initialData={editingCase}
+        defaultIteration={iterationFilter}
       />
 
       {/* Confirmation Dialog */}

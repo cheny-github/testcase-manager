@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Upload, Download, Copy, Check, AlertTriangle, FileJson, Tag, Bot, Sparkles } from 'lucide-react';
+import { Upload, Download, Copy, Check, AlertTriangle, FileJson, Tag, Bot, Sparkles, Layers } from 'lucide-react';
 import { Button } from './ui/Button';
 import { TestCase, TestStatus } from '../types';
 
@@ -24,12 +24,14 @@ Each object must adhere strictly to this structure:
   }
 ]
 
-Please generate the test cases now based on the requirements I provide next.`;
+Please generate the test cases in Chinese now based on the requirements I provide next.
+`;
 
 export const JsonManager: React.FC<JsonManagerProps> = ({ testCases, onImport, onClose }) => {
   const [activeTab, setActiveTab] = useState<'import' | 'export'>('import');
   const [importText, setImportText] = useState('');
   const [globalTags, setGlobalTags] = useState('');
+  const [globalIteration, setGlobalIteration] = useState('v1.0');
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [promptCopied, setPromptCopied] = useState(false);
@@ -63,6 +65,7 @@ export const JsonManager: React.FC<JsonManagerProps> = ({ testCases, onImport, o
           expectedOutput: typeof item.expectedOutput === 'object' ? JSON.stringify(item.expectedOutput, null, 2) : (item.expectedOutput || ''),
           status: Object.values(TestStatus).includes(item.status) ? item.status : TestStatus.DRAFT,
           tags: finalTags,
+          iteration: item.iteration || globalIteration || 'Unassigned',
           createdAt: item.createdAt || Date.now(),
           updatedAt: Date.now()
         };
@@ -165,18 +168,33 @@ export const JsonManager: React.FC<JsonManagerProps> = ({ testCases, onImport, o
               />
             </div>
             
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1.5 flex items-center gap-2">
-                <Tag size={12} />
-                Add tags to all imported items (optional)
-              </label>
-              <input
-                type="text"
-                value={globalTags}
-                onChange={(e) => setGlobalTags(e.target.value)}
-                placeholder="e.g. sprint-42, regression, payment-api (comma separated)"
-                className="w-full bg-white border border-gray-300 rounded-lg px-4 py-2 text-gray-900 text-sm focus:ring-2 focus:ring-blue-600 outline-none"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1.5 flex items-center gap-2">
+                  <Tag size={12} />
+                  Global Tags (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={globalTags}
+                  onChange={(e) => setGlobalTags(e.target.value)}
+                  placeholder="e.g. regression"
+                  className="w-full bg-white border border-gray-300 rounded-lg px-4 py-2 text-gray-900 text-sm focus:ring-2 focus:ring-blue-600 outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1.5 flex items-center gap-2">
+                  <Layers size={12} />
+                  Target Iteration
+                </label>
+                <input
+                  type="text"
+                  value={globalIteration}
+                  onChange={(e) => setGlobalIteration(e.target.value)}
+                  placeholder="e.g. Sprint 42"
+                  className="w-full bg-white border border-gray-300 rounded-lg px-4 py-2 text-gray-900 text-sm focus:ring-2 focus:ring-blue-600 outline-none"
+                />
+              </div>
             </div>
 
             <div className="flex justify-end gap-3 pt-2">
