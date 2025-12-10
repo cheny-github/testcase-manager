@@ -18,6 +18,7 @@ export const TestForm: React.FC<TestFormProps> = ({ initialData, isOpen, onClose
     input: '',
     expectedOutput: '',
     status: TestStatus.DRAFT,
+    failureReason: '',
     tags: [],
     iteration: ''
   });
@@ -32,6 +33,7 @@ export const TestForm: React.FC<TestFormProps> = ({ initialData, isOpen, onClose
         input: initialData.input,
         expectedOutput: initialData.expectedOutput,
         status: initialData.status,
+        failureReason: initialData.failureReason || '',
         tags: initialData.tags || [],
         iteration: initialData.iteration || 'Unassigned'
       });
@@ -43,6 +45,7 @@ export const TestForm: React.FC<TestFormProps> = ({ initialData, isOpen, onClose
         input: '',
         expectedOutput: '',
         status: TestStatus.DRAFT,
+        failureReason: '',
         tags: [],
         iteration: defaultIteration && defaultIteration !== 'ALL' ? defaultIteration : 'v1.0'
       });
@@ -174,6 +177,19 @@ export const TestForm: React.FC<TestFormProps> = ({ initialData, isOpen, onClose
                          </select>
                     </div>
                 </div>
+
+                {formData.status === TestStatus.FAILING && (
+                    <div className="bg-red-50 p-4 rounded-lg border border-red-100 animate-in fade-in slide-in-from-top-2">
+                        <label className="block text-sm font-bold text-red-800 mb-1">Failure Reason</label>
+                        <textarea
+                            value={formData.failureReason}
+                            onChange={e => setFormData({ ...formData, failureReason: e.target.value })}
+                            className="w-full bg-white border border-red-200 rounded-lg px-4 py-2 text-gray-900 focus:ring-2 focus:ring-red-500 outline-none placeholder:text-red-300/70"
+                            placeholder="Describe why the test failed or insert error log..."
+                            rows={2}
+                        />
+                    </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-600 mb-1">Description / Scenario</label>

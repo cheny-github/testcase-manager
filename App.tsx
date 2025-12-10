@@ -47,7 +47,10 @@ const App: React.FC = () => {
   const [testCases, setTestCases] = useState<TestCase[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [tagSearchQuery, setTagSearchQuery] = useState('');
+  
+  // Tag Filter State (Multi-select)
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  
   const [statusFilter, setStatusFilter] = useState<TestStatus | 'ALL'>('ALL');
   
   // Iteration Filter State
@@ -162,6 +165,25 @@ const App: React.FC = () => {
     return Array.from(iterations).sort();
   }, [testCases]);
 
+  // Derive unique tags from the dataset
+  const uniqueTags = useMemo(() => {
+    const tags = new Set<string>();
+    testCases.forEach(tc => {
+        if (Array.isArray(tc.tags)) {
+            tc.tags.forEach(t => tags.add(t));
+        }
+    });
+    return Array.from(tags).sort();
+  }, [testCases]);
+
+  const toggleTag = (tag: string) => {
+    setSelectedTags(prev => 
+      prev.includes(tag) 
+        ? prev.filter(t => t !== tag) 
+        : [...prev, tag]
+    );
+  };
+
   // Filtered cases for LIST VIEW (Respects all filters)
   const listFilteredCases = useMemo(() => {
     return testCases.filter(tc => {
@@ -171,10 +193,9 @@ const App: React.FC = () => {
                             tc.title.toLowerCase().includes(searchLower) || 
                             (tc.description || '').toLowerCase().includes(searchLower);
       
-      // Tag Search
-      const tagSearchLower = tagSearchQuery.toLowerCase();
-      const tags = Array.isArray(tc.tags) ? tc.tags : [];
-      const matchesTag = !tagSearchQuery || tags.some(t => t.toLowerCase().includes(tagSearchLower));
+      // Tag Filter (AND logic)
+      const caseTags = Array.isArray(tc.tags) ? tc.tags : [];
+      const matchesTags = selectedTags.length === 0 || selectedTags.every(t => caseTags.includes(t));
       
       // Status Filter
       const matchesStatus = statusFilter === 'ALL' || tc.status === statusFilter;
@@ -183,9 +204,9 @@ const App: React.FC = () => {
       const tcIteration = tc.iteration || 'Unassigned';
       const matchesIteration = iterationFilter === 'ALL' || tcIteration === iterationFilter;
       
-      return matchesSearch && matchesTag && matchesStatus && matchesIteration;
+      return matchesSearch && matchesTags && matchesStatus && matchesIteration;
     });
-  }, [testCases, searchQuery, tagSearchQuery, statusFilter, iterationFilter]);
+  }, [testCases, searchQuery, selectedTags, statusFilter, iterationFilter]);
 
   // Filtered cases for REPORT VIEW (Respects Iteration ONLY, ignores status/search for "Overall Progress")
   const reportFilteredCases = useMemo(() => {
@@ -320,6 +341,37 @@ const App: React.FC = () => {
                 ))}
             </nav>
 
+            {/* Tags Filters - Multi-select */}
+            {viewMode === 'list' && (
+                <>
+                <div className="flex items-center justify-between mb-2 mt-6">
+                    <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Tags</h3>
+                    {selectedTags.length > 0 && (
+                        <button onClick={() => setSelectedTags([])} className="text-[10px] text-blue-600 hover:text-blue-800 font-medium">
+                            Clear
+                        </button>
+                    )}
+                </div>
+                <div className="flex flex-wrap gap-2 mb-6">
+                    {uniqueTags.length > 0 ? uniqueTags.map(tag => (
+                        <button
+                            key={tag}
+                            onClick={() => toggleTag(tag)}
+                            className={`px-2.5 py-1 text-xs font-medium rounded-md border transition-all ${
+                                selectedTags.includes(tag)
+                                ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                                : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                            }`}
+                        >
+                            {tag}
+                        </button>
+                    )) : (
+                        <span className="text-xs text-gray-400 italic">No tags in DB</span>
+                    )}
+                </div>
+                </>
+            )}
+
             {/* Status Filters - Only show in List Mode */}
             {viewMode === 'list' && (
                 <>
@@ -378,25 +430,13 @@ const App: React.FC = () => {
               <div className="h-16 border-b border-gray-200 flex items-center px-6 gap-4 shrink-0 bg-white/50 backdrop-blur-sm">
                 
                 {/* Text Search */}
-                <div className="relative flex-1 max-w-sm">
+                <div className="relative flex-1 max-w-lg">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                   <input 
                     type="text" 
-                    placeholder="Search title or description..."
+                    placeholder="Search title, description or input data..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-full py-1.5 pl-10 pr-4 focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none transition-all shadow-sm placeholder:text-gray-400"
-                  />
-                </div>
-
-                {/* Tag Search - NEW */}
-                <div className="relative flex-1 max-w-xs">
-                  <Tag className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                  <input 
-                    type="text" 
-                    placeholder="Filter by tag..."
-                    value={tagSearchQuery}
-                    onChange={(e) => setTagSearchQuery(e.target.value)}
                     className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-full py-1.5 pl-10 pr-4 focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none transition-all shadow-sm placeholder:text-gray-400"
                   />
                 </div>
@@ -419,7 +459,9 @@ const App: React.FC = () => {
                     <Database size={48} className="mb-4 text-gray-300" />
                     <p className="text-lg font-medium text-gray-600">No test cases found</p>
                     <p className="text-sm">
-                        {iterationFilter !== 'ALL' ? `Current Iteration: ${iterationFilter}` : 'Create a new one or adjust filters'}
+                        {iterationFilter !== 'ALL' || selectedTags.length > 0 
+                            ? 'Adjust your filters to see more results' 
+                            : 'Create a new test case to get started'}
                     </p>
                   </div>
                 ) : (
@@ -431,7 +473,7 @@ const App: React.FC = () => {
                           setEditingCase(tc);
                           setIsFormOpen(true);
                         }}
-                        className="group bg-white border border-gray-200 rounded-xl p-5 hover:border-blue-400 transition-all cursor-pointer shadow-sm hover:shadow-md flex flex-col relative h-[320px]"
+                        className="group bg-white border border-gray-200 rounded-xl p-5 hover:border-blue-400 transition-all cursor-pointer shadow-sm hover:shadow-md flex flex-col relative h-[340px]"
                       >
                         {/* Header: Status & Actions */}
                         <div className="flex justify-between items-start mb-3">
@@ -461,9 +503,16 @@ const App: React.FC = () => {
                               {tc.title}
                             </h3>
                             
-                            <p className="text-sm text-gray-500 line-clamp-2 mb-4 h-[40px]">
+                            <p className="text-sm text-gray-500 line-clamp-2 mb-2 h-[40px]">
                               {tc.description || <span className="italic text-gray-400">No description provided</span>}
                             </p>
+
+                             {/* Failure Reason Alert */}
+                             {tc.status === TestStatus.FAILING && tc.failureReason && (
+                                <div className="mb-2 px-3 py-1.5 bg-red-50 border border-red-100 rounded-md text-xs text-red-700 line-clamp-2">
+                                    <span className="font-bold">Failure:</span> {tc.failureReason}
+                                </div>
+                            )}
 
                             {/* Data Preview Box */}
                             <div className="bg-gray-50 rounded-lg p-3 border border-gray-200 font-mono text-xs space-y-2 mt-auto mb-1">

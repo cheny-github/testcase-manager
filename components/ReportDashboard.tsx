@@ -54,7 +54,7 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({ testCases, ite
 | **${stats.total}** | ${stats.passing} | ${stats.failing} | ${stats.skipped} | ${stats.draft} |
 
 ## 🚨 Blocking Issues (Failing)
-${grouped[TestStatus.FAILING].length === 0 ? '_No failing tests._' : grouped[TestStatus.FAILING].map(t => `- [ ] **${t.title}**: ${t.description || 'No description'}`).join('\n')}
+${grouped[TestStatus.FAILING].length === 0 ? '_No failing tests._' : grouped[TestStatus.FAILING].map(t => `- [ ] **${t.title}**\n  - ${t.description || 'No description'}${t.failureReason ? `\n  - ❌ **Reason:** ${t.failureReason}` : ''}`).join('\n')}
 
 ## ✅ Passing Features
 ${grouped[TestStatus.PASSING].map(t => `- [x] ${t.title}`).join('\n')}
@@ -154,18 +154,25 @@ ${[...grouped[TestStatus.DRAFT], ...grouped[TestStatus.SKIPPED]].map(t => `- [ ]
                       if(a.status !== TestStatus.FAILING && b.status === TestStatus.FAILING) return 1;
                       return 0;
                   }).map(tc => (
-                    <div key={tc.id} className="px-6 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors">
-                        <div className="flex items-center gap-3 min-w-0">
-                            <StatusBadge status={tc.status} />
-                            <span className="font-medium text-gray-700 truncate">{tc.title}</span>
+                    <div key={tc.id} className="px-6 py-3 hover:bg-gray-50 transition-colors flex flex-col gap-2">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3 min-w-0">
+                                <StatusBadge status={tc.status} />
+                                <span className="font-medium text-gray-700 truncate">{tc.title}</span>
+                            </div>
+                            <div className="flex items-center gap-4 text-sm text-gray-500 flex-shrink-0">
+                                {tc.tags.length > 0 && (
+                                    <span className="px-2 py-0.5 bg-gray-100 rounded-full text-xs">
+                                        {tc.tags[0]} {tc.tags.length > 1 && `+${tc.tags.length - 1}`}
+                                    </span>
+                                )}
+                            </div>
                         </div>
-                        <div className="flex items-center gap-4 text-sm text-gray-500 flex-shrink-0">
-                            {tc.tags.length > 0 && (
-                                <span className="px-2 py-0.5 bg-gray-100 rounded-full text-xs">
-                                    {tc.tags[0]} {tc.tags.length > 1 && `+${tc.tags.length - 1}`}
-                                </span>
-                            )}
-                        </div>
+                        {tc.status === TestStatus.FAILING && tc.failureReason && (
+                             <div className="ml-10 text-xs text-red-700 bg-red-50 border border-red-100 px-3 py-1.5 rounded-md inline-block self-start">
+                                <strong>Reason:</strong> {tc.failureReason}
+                             </div>
+                        )}
                     </div>
                   ))
                 )}

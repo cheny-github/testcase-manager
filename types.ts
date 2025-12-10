@@ -12,6 +12,7 @@ export interface TestCase {
   input: string; // Stored as stringified JSON or raw text
   expectedOutput: string; // Stored as stringified JSON or raw text
   status: TestStatus;
+  failureReason?: string; // Reason for failure if status is FAILING
   tags: string[];
   iteration: string; // New field for version control (e.g., "v1.0", "Sprint 42")
   createdAt: number;

@@ -64,6 +64,7 @@ export const JsonManager: React.FC<JsonManagerProps> = ({ testCases, onImport, o
           input: typeof item.input === 'object' ? JSON.stringify(item.input, null, 2) : (item.input || ''),
           expectedOutput: typeof item.expectedOutput === 'object' ? JSON.stringify(item.expectedOutput, null, 2) : (item.expectedOutput || ''),
           status: Object.values(TestStatus).includes(item.status) ? item.status : TestStatus.DRAFT,
+          failureReason: item.failureReason || '',
           tags: finalTags,
           iteration: item.iteration || globalIteration || 'Unassigned',
           createdAt: item.createdAt || Date.now(),
