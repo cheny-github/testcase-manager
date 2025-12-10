@@ -381,6 +381,7 @@ const App: React.FC = () => {
                     { label: 'All Statuses', value: 'ALL', icon: Database },
                     { label: 'Passing', value: TestStatus.PASSING, icon: CheckCircle2, color: 'text-green-600' },
                     { label: 'Failing', value: TestStatus.FAILING, icon: XCircle, color: 'text-red-600' },
+                    { label: 'Skipped', value: TestStatus.SKIPPED, icon: Clock, color: 'text-gray-600' },
                     { label: 'Drafts', value: TestStatus.DRAFT, icon: Edit3, color: 'text-amber-600' },
                   ].map((item) => (
                     <button
