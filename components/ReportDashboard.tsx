@@ -58,7 +58,7 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({ testCases, ite
 
       // Define columns based on context
       const header = isFailingTable 
-        ? `| Status | Title | Description | Failure Reason | Input / Expected |\n| :---: | :--- | :--- | :--- | :--- |`
+        ? `| Status | Title | Description | Failure Reason | Input | Expected Output |\n| :---: | :--- | :--- | :--- | :--- | :--- |`
         : `| Status | Title | Description | Input | Expected Output |\n| :---: | :--- | :--- | :--- | :--- |`;
 
       const rows = cases.map(t => {
@@ -72,9 +72,7 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({ testCases, ite
         
         if (isFailingTable) {
             const reason = `**${clean(t.failureReason)}**`;
-            // Combine Input/Output for failing table to save space for Reason
-            const io = `📥 \`${input}\`<br>📤 \`${output}\``;
-            return `| ${icon} | **${clean(t.title, 50)}** | ${desc} | ${reason} | ${io} |`;
+            return `| ${icon} | **${clean(t.title, 50)}** | ${desc} | ${reason} | \`${input}\` | \`${output}\` |`;
         } else {
             return `| ${icon} | **${clean(t.title, 50)}** | ${desc} | \`${input}\` | \`${output}\` |`;
         }
@@ -85,8 +83,8 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({ testCases, ite
 
     const md = `
 # 📊 Test Report: ${iterationName}
-  **Date:** ${date}  
-  **Progress:** ${stats.passRate}% Passing
+**Date:** ${date}  
+**Progress:** ${stats.passRate}% Passing
 
 ## 📈 Executive Summary
 
