@@ -1,5 +1,5 @@
 {
-  "name": "TDD Nexus",
-  "description": "A developer-centric tool for managing Test Driven Development cases. Organize, edit, and persist structured test data using IndexedDB with JSON import/export capabilities.",
+  "name": "Testcase Manager",
+  "description": "A developer-centric tool for managing test cases. Organize, edit, and persist structured test data using IndexedDB with JSON import/export capabilities.",
   "requestFramePermissions": []
 }

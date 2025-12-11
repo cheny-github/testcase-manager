@@ -6,8 +6,7 @@ import {
   XCircle, 
   Clock, 
   PlayCircle, 
-  PieChart, 
-  Download 
+  PieChart
 } from 'lucide-react';
 import { TestCase, TestStatus } from '../types';
 import { Button } from './ui/Button';
@@ -43,24 +42,66 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({ testCases, ite
       [TestStatus.DRAFT]: testCases.filter(t => t.status === TestStatus.DRAFT),
     };
 
+    // Helper to sanitize text for markdown table cells
+    const clean = (text: string | undefined, limit = 200) => {
+      if (!text || !text.trim()) return '-';
+      let content = text.trim();
+      if (content.length > limit) {
+          content = content.slice(0, limit) + '...';
+      }
+      // Escape pipes, replace newlines with <br>
+      return content.replace(/\|/g, '\\|').replace(/\n/g, '<br>');
+    };
+
+    const createTable = (cases: TestCase[], isFailingTable: boolean = false) => {
+      if (cases.length === 0) return '> _No test cases._';
+
+      // Define columns based on context
+      const header = isFailingTable 
+        ? `| Status | Title | Description | Failure Reason | Input / Expected |\n| :---: | :--- | :--- | :--- | :--- |`
+        : `| Status | Title | Description | Input | Expected Output |\n| :---: | :--- | :--- | :--- | :--- |`;
+
+      const rows = cases.map(t => {
+        const icon = t.status === TestStatus.PASSING ? '✅' : 
+                     t.status === TestStatus.FAILING ? '❌' : 
+                     t.status === TestStatus.SKIPPED ? '⏭️' : '📝';
+        
+        const desc = clean(t.description, 100);
+        const input = clean(t.input, 100);
+        const output = clean(t.expectedOutput, 100);
+        
+        if (isFailingTable) {
+            const reason = `**${clean(t.failureReason)}**`;
+            // Combine Input/Output for failing table to save space for Reason
+            const io = `📥 \`${input}\`<br>📤 \`${output}\``;
+            return `| ${icon} | **${clean(t.title, 50)}** | ${desc} | ${reason} | ${io} |`;
+        } else {
+            return `| ${icon} | **${clean(t.title, 50)}** | ${desc} | \`${input}\` | \`${output}\` |`;
+        }
+      }).join('\n');
+
+      return `${header}\n${rows}`;
+    };
+
     const md = `
 # 📊 Test Report: ${iterationName}
-**Date:** ${date}
-**Progress:** ${stats.passRate}% Passing (${stats.passing}/${stats.total})
+  **Date:** ${date}  
+  **Progress:** ${stats.passRate}% Passing
 
-## 📈 Summary
-| Total | ✅ Passing | 🔴 Failing | ⏭️ Skipped | 📝 Draft |
-|:-----:|:---------:|:----------:|:----------:|:--------:|
+## 📈 Executive Summary
+
+| Total Cases | ✅ Passing | 🔴 Failing | ⏭️ Skipped | 📝 Draft |
+|:-----------:|:----------:|:----------:|:----------:|:--------:|
 | **${stats.total}** | ${stats.passing} | ${stats.failing} | ${stats.skipped} | ${stats.draft} |
 
-## 🚨 Blocking Issues (Failing)
-${grouped[TestStatus.FAILING].length === 0 ? '_No failing tests._' : grouped[TestStatus.FAILING].map(t => `- [ ] **${t.title}**\n  - ${t.description || 'No description'}${t.failureReason ? `\n  - ❌ **Reason:** ${t.failureReason}` : ''}`).join('\n')}
+## 🚨 Blocking Issues (${grouped[TestStatus.FAILING].length})
+${createTable(grouped[TestStatus.FAILING], true)}
 
-## ✅ Passing Features
-${grouped[TestStatus.PASSING].map(t => `- [x] ${t.title}`).join('\n')}
+## ✅ Passing Features (${grouped[TestStatus.PASSING].length})
+${createTable(grouped[TestStatus.PASSING], false)}
 
-## 🚧 Pending / Drafts
-${[...grouped[TestStatus.DRAFT], ...grouped[TestStatus.SKIPPED]].map(t => `- [ ] ${t.title} _(${t.status})_`).join('\n')}
+## 🚧 Drafts & Skipped (${grouped[TestStatus.DRAFT].length + grouped[TestStatus.SKIPPED].length})
+${createTable([...grouped[TestStatus.DRAFT], ...grouped[TestStatus.SKIPPED]], false)}
     `.trim();
 
     return md;

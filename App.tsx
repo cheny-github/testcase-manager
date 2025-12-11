@@ -235,8 +235,8 @@ const App: React.FC = () => {
             <Database size={20} className="text-white" />
           </div>
           <div>
-            <h1 className="font-bold text-lg tracking-tight text-gray-900">TDD Nexus</h1>
-            <p className="text-xs text-gray-500">Test Driven Development Manager</p>
+            <h1 className="font-bold text-lg tracking-tight text-gray-900">Testcase Manager</h1>
+            <p className="text-xs text-gray-500">Test Case Management Tool</p>
           </div>
         </div>
         
