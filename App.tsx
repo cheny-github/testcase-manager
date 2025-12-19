@@ -2,19 +2,18 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Plus, 
   Trash2, 
-  Edit3, 
-  Filter, 
   Search, 
   CheckCircle2, 
   XCircle, 
   Clock, 
   PlayCircle,
   Database,
-  Tag,
   Layers,
   FolderOpen,
   LayoutDashboard,
-  ListTodo
+  ListTodo,
+  ChevronRight,
+  Tag as TagIcon
 } from 'lucide-react';
 import { getAllTestCases, saveTestCase, deleteTestCase, bulkImportTestCases, clearAllTestCases } from './services/db';
 import { TestCase, TestStatus } from './types';
@@ -27,10 +26,10 @@ import { ConfirmDialog } from './components/ui/ConfirmDialog';
 // Utility for status color
 const getStatusColor = (status: TestStatus) => {
   switch (status) {
-    case TestStatus.PASSING: return 'text-green-700 bg-green-50 border-green-200';
-    case TestStatus.FAILING: return 'text-red-700 bg-red-50 border-red-200';
-    case TestStatus.SKIPPED: return 'text-gray-600 bg-gray-100 border-gray-200';
-    default: return 'text-amber-700 bg-amber-50 border-amber-200';
+    case TestStatus.PASSING: return 'text-green-600 bg-green-50 border-green-200';
+    case TestStatus.FAILING: return 'text-red-600 bg-red-50 border-red-200';
+    case TestStatus.SKIPPED: return 'text-slate-500 bg-slate-50 border-slate-200';
+    default: return 'text-amber-600 bg-amber-50 border-amber-200';
   }
 };
 
@@ -105,7 +104,6 @@ const App: React.FC = () => {
   };
 
   const handleDeleteClick = (id: string, e: React.MouseEvent) => {
-    // Critical: Stop the click from bubbling to the card which would open the edit form
     e.stopPropagation();
     e.preventDefault();
 
@@ -184,23 +182,19 @@ const App: React.FC = () => {
     );
   };
 
-  // Filtered cases for LIST VIEW (Respects all filters)
+  // Filtered cases for LIST VIEW
   const listFilteredCases = useMemo(() => {
     return testCases.filter(tc => {
-      // Title or Description Search
       const searchLower = searchQuery.toLowerCase();
       const matchesSearch = !searchQuery || 
                             tc.title.toLowerCase().includes(searchLower) || 
                             (tc.description || '').toLowerCase().includes(searchLower);
       
-      // Tag Filter (AND logic)
       const caseTags = Array.isArray(tc.tags) ? tc.tags : [];
       const matchesTags = selectedTags.length === 0 || selectedTags.every(t => caseTags.includes(t));
       
-      // Status Filter
       const matchesStatus = statusFilter === 'ALL' || tc.status === statusFilter;
 
-      // Iteration Filter
       const tcIteration = tc.iteration || 'Unassigned';
       const matchesIteration = iterationFilter === 'ALL' || tcIteration === iterationFilter;
       
@@ -208,7 +202,6 @@ const App: React.FC = () => {
     });
   }, [testCases, searchQuery, selectedTags, statusFilter, iterationFilter]);
 
-  // Filtered cases for REPORT VIEW (Respects Iteration ONLY, ignores status/search for "Overall Progress")
   const reportFilteredCases = useMemo(() => {
     return testCases.filter(tc => {
        const tcIteration = tc.iteration || 'Unassigned';
@@ -226,37 +219,38 @@ const App: React.FC = () => {
   }, [listFilteredCases]);
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50 text-gray-900 font-sans">
+    <div className="flex flex-col h-screen bg-slate-50 text-slate-900 font-sans">
       
       {/* Top Navbar */}
-      <header className="h-16 border-b border-gray-200 bg-white/80 backdrop-blur-md flex items-center justify-between px-6 shrink-0 z-10 shadow-sm">
+      <header className="h-14 border-b border-slate-200 bg-white flex items-center justify-between px-6 shrink-0 z-10">
         <div className="flex items-center gap-3">
-          <div className="bg-blue-600 p-2 rounded-lg shadow-sm">
-            <Database size={20} className="text-white" />
+          <div className="bg-blue-600 p-1.5 rounded-lg shadow-sm">
+            <Database size={18} className="text-white" />
           </div>
           <div>
-            <h1 className="font-bold text-lg tracking-tight text-gray-900">Testcase Manager</h1>
-            <p className="text-xs text-gray-500">Test Case Management Tool</p>
+            <h1 className="font-extrabold text-base tracking-tight text-slate-900 leading-none">TestCase Hub</h1>
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">TDD Management System</p>
           </div>
         </div>
         
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <Button 
             variant="secondary" 
             onClick={() => setShowJsonManager(!showJsonManager)}
-            className={showJsonManager ? 'bg-gray-100 border-gray-400' : ''}
+            className={`text-xs px-3 py-1.5 ${showJsonManager ? 'bg-slate-100' : ''}`}
           >
-            {showJsonManager ? 'Close JSON Tool' : 'Import / Export'}
+            {showJsonManager ? 'Back to List' : 'Data Operations'}
           </Button>
-          <div className="w-px h-6 bg-gray-300 mx-2"></div>
+          <div className="w-px h-5 bg-slate-200 mx-1"></div>
           <Button 
             onClick={() => {
               setEditingCase(null);
               setIsFormOpen(true);
             }} 
-            icon={<Plus size={18} />}
+            icon={<Plus size={16} />}
+            className="text-xs px-4 py-1.5 font-bold"
           >
-            New Test Case
+            Create Case
           </Button>
         </div>
       </header>
@@ -265,155 +259,128 @@ const App: React.FC = () => {
       <div className="flex flex-1 overflow-hidden">
         
         {/* Sidebar */}
-        <aside className="w-64 bg-white border-r border-gray-200 flex-col hidden md:flex shrink-0">
-          <div className="p-6 flex-1 overflow-y-auto custom-scrollbar">
+        <aside className="w-56 bg-white border-r border-slate-200 flex-col hidden md:flex shrink-0 shadow-[1px_0_0_0_rgba(0,0,0,0.03)]">
+          <div className="p-4 flex-1 overflow-y-auto custom-scrollbar space-y-6">
             
             {/* View Mode Toggle */}
-            <div className="bg-gray-100 p-1 rounded-lg mb-6 flex">
+            <div className="bg-slate-100 p-1 rounded-lg flex gap-1">
                 <button 
                   onClick={() => setViewMode('list')}
-                  className={`flex-1 py-1.5 px-2 text-xs font-medium rounded-md flex items-center justify-center gap-2 transition-all ${viewMode === 'list' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
+                  className={`flex-1 py-1.5 px-2 text-xs font-bold rounded flex items-center justify-center gap-1.5 transition-all ${viewMode === 'list' ? 'bg-white text-blue-600 shadow-sm border border-slate-200/50' : 'text-slate-500 hover:text-slate-900'}`}
                 >
-                    <ListTodo size={14} /> List
+                    <ListTodo size={14} /> Cards
                 </button>
                 <button 
                   onClick={() => setViewMode('report')}
-                  className={`flex-1 py-1.5 px-2 text-xs font-medium rounded-md flex items-center justify-center gap-2 transition-all ${viewMode === 'report' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
+                  className={`flex-1 py-1.5 px-2 text-xs font-bold rounded flex items-center justify-center gap-1.5 transition-all ${viewMode === 'report' ? 'bg-white text-blue-600 shadow-sm border border-slate-200/50' : 'text-slate-500 hover:text-slate-900'}`}
                 >
-                    <LayoutDashboard size={14} /> Report
+                    <LayoutDashboard size={14} /> Metrics
                 </button>
             </div>
 
-            {/* Dashboard Stats (Visible only in List Mode) */}
-            {viewMode === 'list' && (
-                <>
-                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">
-                  Overview {iterationFilter !== 'ALL' ? `(${iterationFilter})` : ''}
-                </h3>
-                <div className="grid grid-cols-2 gap-3 mb-6">
-                  <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
-                    <div className="text-2xl font-bold text-gray-800">{stats.total}</div>
-                    <div className="text-xs text-gray-500">Filtered Cases</div>
-                  </div>
-                  <div className="bg-green-50 p-3 rounded-lg border border-green-100">
-                    <div className="text-2xl font-bold text-green-600">{stats.passing}</div>
-                    <div className="text-xs text-green-600/80">Passing</div>
-                  </div>
-                  <div className="bg-red-50 p-3 rounded-lg border border-red-100">
-                    <div className="text-2xl font-bold text-red-600">{stats.failing}</div>
-                    <div className="text-xs text-red-600/80">Failing</div>
-                  </div>
-                  <div className="bg-amber-50 p-3 rounded-lg border border-amber-100">
-                    <div className="text-2xl font-bold text-amber-600">{stats.draft}</div>
-                    <div className="text-xs text-amber-600/80">Draft</div>
-                  </div>
-                </div>
-                </>
-            )}
+            {/* Version Scopes */}
+            <div>
+              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-2">Project Version</h3>
+              <nav className="space-y-0.5">
+                  <button
+                      onClick={() => setIterationFilter('ALL')}
+                      className={`w-full flex items-center px-3 py-2 text-xs font-bold rounded-lg transition-colors ${
+                          iterationFilter === 'ALL'
+                          ? 'bg-blue-50 text-blue-700'
+                          : 'text-slate-500 hover:bg-slate-50'
+                      }`}
+                  >
+                      <FolderOpen size={14} className="mr-3 opacity-70" />
+                      All Iterations
+                  </button>
+                  {uniqueIterations.map(iter => (
+                      <button
+                          key={iter}
+                          onClick={() => setIterationFilter(iter)}
+                          className={`w-full flex items-center px-3 py-2 text-xs font-bold rounded-lg transition-colors ${
+                              iterationFilter === iter
+                              ? 'bg-blue-50 text-blue-700'
+                              : 'text-slate-500 hover:bg-slate-50'
+                          }`}
+                      >
+                          <Layers size={14} className="mr-3 opacity-40" />
+                          <span className="truncate">{iter}</span>
+                      </button>
+                  ))}
+              </nav>
+            </div>
 
-            {/* Iteration Filters */}
-            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4 mt-2">Versions / Iterations</h3>
-            <nav className="space-y-1 mb-6">
-                <button
-                    onClick={() => setIterationFilter('ALL')}
-                    className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                        iterationFilter === 'ALL'
-                        ? 'bg-blue-50 text-blue-600 border border-blue-200'
-                        : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
-                    }`}
-                >
-                    <FolderOpen size={16} className="mr-3" />
-                    All Versions
-                </button>
-                {uniqueIterations.map(iter => (
-                    <button
-                        key={iter}
-                        onClick={() => setIterationFilter(iter)}
-                        className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                            iterationFilter === iter
-                            ? 'bg-blue-50 text-blue-600 border border-blue-200'
-                            : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
-                        }`}
-                    >
-                        <Layers size={16} className="mr-3 text-gray-400" />
-                        <span className="truncate">{iter}</span>
-                    </button>
-                ))}
-            </nav>
-
-            {/* Tags Filters - Multi-select */}
+            {/* Status Filters */}
             {viewMode === 'list' && (
-                <>
-                <div className="flex items-center justify-between mb-2 mt-6">
-                    <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Tags</h3>
-                    {selectedTags.length > 0 && (
-                        <button onClick={() => setSelectedTags([])} className="text-[10px] text-blue-600 hover:text-blue-800 font-medium">
-                            Clear
-                        </button>
-                    )}
-                </div>
-                <div className="flex flex-wrap gap-2 mb-6">
-                    {uniqueTags.length > 0 ? uniqueTags.map(tag => (
-                        <button
-                            key={tag}
-                            onClick={() => toggleTag(tag)}
-                            className={`px-2.5 py-1 text-xs font-medium rounded-md border transition-all ${
-                                selectedTags.includes(tag)
-                                ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                                : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                            }`}
-                        >
-                            {tag}
-                        </button>
-                    )) : (
-                        <span className="text-xs text-gray-400 italic">No tags in DB</span>
-                    )}
-                </div>
-                </>
-            )}
-
-            {/* Status Filters - Only show in List Mode */}
-            {viewMode === 'list' && (
-                <>
-                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Status Filters</h3>
-                <nav className="space-y-1">
+                <div>
+                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-2">Test State</h3>
+                <nav className="space-y-0.5">
                   {[
-                    { label: 'All Statuses', value: 'ALL', icon: Database },
+                    { label: 'All Cases', value: 'ALL', icon: Database },
                     { label: 'Passing', value: TestStatus.PASSING, icon: CheckCircle2, color: 'text-green-600' },
                     { label: 'Failing', value: TestStatus.FAILING, icon: XCircle, color: 'text-red-600' },
-                    { label: 'Skipped', value: TestStatus.SKIPPED, icon: Clock, color: 'text-gray-600' },
-                    { label: 'Drafts', value: TestStatus.DRAFT, icon: Edit3, color: 'text-amber-600' },
+                    { label: 'Skipped', value: TestStatus.SKIPPED, icon: Clock, color: 'text-slate-500' },
+                    { label: 'In Draft', value: TestStatus.DRAFT, icon: PlayCircle, color: 'text-amber-600' },
                   ].map((item) => (
                     <button
                       key={item.value}
                       onClick={() => setStatusFilter(item.value as TestStatus | 'ALL')}
-                      className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                      className={`w-full flex items-center px-3 py-2 text-xs font-bold rounded-lg transition-colors ${
                         statusFilter === item.value 
-                          ? 'bg-gray-100 text-gray-900 border border-gray-300' 
-                          : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
+                          ? 'bg-slate-100 text-slate-900' 
+                          : 'text-slate-500 hover:bg-slate-50'
                       }`}
                     >
-                      <item.icon size={16} className={`mr-3 ${item.color || ''}`} />
+                      <item.icon size={14} className={`mr-3 ${item.color || 'opacity-40'}`} />
                       {item.label}
                     </button>
                   ))}
                 </nav>
-                </>
+                </div>
+            )}
+
+            {/* Tags Filters */}
+            {viewMode === 'list' && uniqueTags.length > 0 && (
+                <div>
+                <div className="flex items-center justify-between mb-3 px-2">
+                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tags</h3>
+                    {selectedTags.length > 0 && (
+                        <button onClick={() => setSelectedTags([])} className="text-[9px] text-blue-600 font-black hover:underline">
+                            CLEAR
+                        </button>
+                    )}
+                </div>
+                <div className="flex flex-wrap gap-1 px-1">
+                    {uniqueTags.map(tag => (
+                        <button
+                            key={tag}
+                            onClick={() => toggleTag(tag)}
+                            className={`px-2 py-1 text-[10px] font-bold rounded-md transition-all border ${
+                                selectedTags.includes(tag)
+                                ? 'bg-blue-600 text-white border-blue-600'
+                                : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+                            }`}
+                        >
+                            {tag}
+                        </button>
+                    ))}
+                </div>
+                </div>
             )}
           </div>
           
-          <div className="mt-auto p-6 border-t border-gray-200">
-             <button onClick={handleClearDbClick} className="text-xs text-red-500 hover:text-red-700 flex items-center gap-2 transition-colors font-medium">
+          <div className="mt-auto p-4 border-t border-slate-100">
+             <button onClick={handleClearDbClick} className="w-full py-2 text-[10px] text-slate-300 hover:text-red-500 flex items-center justify-center gap-2 transition-colors font-black uppercase tracking-tighter">
                 <Trash2 size={12} /> Clear Database
              </button>
           </div>
         </aside>
 
         {/* Main Area */}
-        <main className="flex-1 flex flex-col min-w-0 bg-gray-50">
+        <main className="flex-1 flex flex-col min-w-0 bg-slate-50/50">
           
           {showJsonManager ? (
-            <div className="p-6 h-full">
+            <div className="p-6 h-full bg-slate-50/30">
               <JsonManager 
                 testCases={testCases} 
                 onImport={handleBulkImport} 
@@ -423,50 +390,49 @@ const App: React.FC = () => {
           ) : viewMode === 'report' ? (
              <ReportDashboard 
                 testCases={reportFilteredCases} 
-                iterationName={iterationFilter === 'ALL' ? 'All Versions' : iterationFilter}
+                iterationName={iterationFilter === 'ALL' ? 'Entire Project' : iterationFilter}
              />
           ) : (
             <>
-              {/* Filter Bar */}
-              <div className="h-16 border-b border-gray-200 flex items-center px-6 gap-4 shrink-0 bg-white/50 backdrop-blur-sm">
-                
-                {/* Text Search */}
-                <div className="relative flex-1 max-w-lg">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+              {/* Toolbar */}
+              <div className="h-12 border-b border-slate-200 flex items-center px-6 gap-4 shrink-0 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+                <div className="relative flex-1 max-w-sm">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={13} />
                   <input 
                     type="text" 
-                    placeholder="Search title, description or input data..."
+                    placeholder="Search titles, scenarios..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-full py-1.5 pl-10 pr-4 focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none transition-all shadow-sm placeholder:text-gray-400"
+                    className="w-full bg-slate-50 border border-slate-100 text-xs font-medium text-slate-900 rounded-lg py-1.5 pl-9 pr-4 focus:ring-1 focus:ring-blue-500 focus:bg-white outline-none transition-all placeholder:text-slate-300"
                   />
                 </div>
-
-                <div className="flex items-center gap-2 md:hidden">
-                  <button className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg">
-                    <Filter size={18} />
-                  </button>
+                
+                <div className="flex items-center gap-4 text-[10px] font-bold text-slate-400 ml-auto uppercase tracking-widest">
+                    <span>{listFilteredCases.length} Cases</span>
+                    <div className="flex items-center gap-3">
+                        <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-green-500"></span> {stats.passing}</span>
+                        <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-red-500"></span> {stats.failing}</span>
+                    </div>
                 </div>
               </div>
 
-              {/* Scrollable List */}
-              <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+              {/* Grid Layout for Cards */}
+              <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
                 {loading ? (
-                  <div className="flex items-center justify-center h-64 text-gray-500">
-                    Loading database...
+                  <div className="flex flex-col items-center justify-center h-64 text-slate-400 text-sm">
+                    <Loader2 className="w-6 h-6 animate-spin mb-4" />
+                    <span>Synchronizing database...</span>
                   </div>
                 ) : listFilteredCases.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-full text-gray-400 opacity-80">
-                    <Database size={48} className="mb-4 text-gray-300" />
-                    <p className="text-lg font-medium text-gray-600">No test cases found</p>
-                    <p className="text-sm">
-                        {iterationFilter !== 'ALL' || selectedTags.length > 0 
-                            ? 'Adjust your filters to see more results' 
-                            : 'Create a new test case to get started'}
-                    </p>
+                  <div className="flex flex-col items-center justify-center h-full text-slate-300">
+                    <div className="w-20 h-20 bg-slate-100 rounded-3xl flex items-center justify-center mb-4">
+                        <Database size={32} className="opacity-20" />
+                    </div>
+                    <p className="text-sm font-bold">No test cases found in this view</p>
+                    <p className="text-xs mt-1">Adjust filters or create a new case</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {listFilteredCases.map(tc => (
                       <div 
                         key={tc.id} 
@@ -474,78 +440,59 @@ const App: React.FC = () => {
                           setEditingCase(tc);
                           setIsFormOpen(true);
                         }}
-                        className="group bg-white border border-gray-200 rounded-xl p-5 hover:border-blue-400 transition-all cursor-pointer shadow-sm hover:shadow-md flex flex-col relative h-[340px]"
+                        className="group relative bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:shadow-md hover:border-blue-200 transition-all cursor-pointer flex flex-col min-h-[160px]"
                       >
-                        {/* Header: Status & Actions */}
-                        <div className="flex justify-between items-start mb-3">
-                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${getStatusColor(tc.status)}`}>
-                            {getStatusIcon(tc.status)}
-                            {tc.status}
-                          </span>
-                          
-                          <div className="flex items-center gap-2">
-                             <div className="bg-gray-100 px-2 py-0.5 rounded text-[10px] font-medium text-gray-500 flex items-center gap-1" title="Iteration / Version">
-                                <Layers size={10} />
-                                {tc.iteration || 'Unassigned'}
-                             </div>
-                             <button 
-                              onClick={(e) => handleDeleteClick(tc.id, e)}
-                              title="Delete Test Case"
-                              className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors z-20 opacity-60 hover:opacity-100"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
+                        {/* Status Icon & Version */}
+                        <div className="flex items-center justify-between mb-3">
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center border shadow-sm transition-transform group-hover:scale-105 ${getStatusColor(tc.status)}`}>
+                                {getStatusIcon(tc.status)}
+                            </div>
+                            <span className="text-[9px] font-black text-slate-500 bg-slate-50 px-2 py-0.5 rounded border border-slate-100 uppercase tracking-tighter">
+                                {tc.iteration || 'v1.0'}
+                            </span>
                         </div>
-                        
-                        {/* Main Content */}
-                        <div className="flex-1 min-h-0 flex flex-col">
-                            <h3 className="font-semibold text-gray-900 mb-2 leading-snug line-clamp-2 group-hover:text-blue-600 transition-colors text-base">
-                              {tc.title}
+
+                        {/* Title & Description */}
+                        <div className="flex-1">
+                            <h3 className="font-bold text-slate-900 line-clamp-2 text-sm mb-1 group-hover:text-blue-600 transition-colors">
+                                {tc.title}
                             </h3>
-                            
-                            <p className="text-sm text-gray-500 line-clamp-2 mb-2 h-[40px]">
-                              {tc.description || <span className="italic text-gray-400">No description provided</span>}
+                            <p className="text-[11px] text-slate-400 line-clamp-2 font-medium leading-relaxed">
+                                {tc.description || <span className="italic opacity-50">No scenario details provided</span>}
                             </p>
+                        </div>
 
-                             {/* Failure Reason Alert */}
-                             {tc.status === TestStatus.FAILING && tc.failureReason && (
-                                <div className="mb-2 px-3 py-1.5 bg-red-50 border border-red-100 rounded-md text-xs text-red-700 line-clamp-2">
-                                    <span className="font-bold">Failure:</span> {tc.failureReason}
-                                </div>
-                            )}
-
-                            {/* Data Preview Box */}
-                            <div className="bg-gray-50 rounded-lg p-3 border border-gray-200 font-mono text-xs space-y-2 mt-auto mb-1">
-                                <div className="flex items-start gap-2.5">
-                                  <span className="text-blue-600/80 font-bold uppercase tracking-wider text-[10px] min-w-[24px] pt-0.5">In</span>
-                                  <span className="text-gray-700 truncate block flex-1 border-b border-dashed border-gray-300 pb-0.5" title={tc.input}>
-                                    {tc.input || <span className="text-gray-400 italic">Empty</span>}
-                                  </span>
-                                </div>
-                                <div className="flex items-start gap-2.5">
-                                   <span className="text-green-600/80 font-bold uppercase tracking-wider text-[10px] min-w-[24px] pt-0.5">Out</span>
-                                   <span className="text-gray-700 truncate block flex-1" title={tc.expectedOutput}>
-                                    {tc.expectedOutput || <span className="text-gray-400 italic">Empty</span>}
-                                   </span>
+                        {/* Footer: Tags & Actions */}
+                        <div className="mt-4 pt-3 border-t border-slate-50 flex items-center justify-between gap-2">
+                            <div className="flex flex-wrap gap-1 overflow-hidden h-5">
+                                {(tc.tags || []).slice(0, 2).map(tag => (
+                                    <span key={tag} className="inline-flex items-center gap-1 text-[9px] px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded font-bold uppercase whitespace-nowrap">
+                                        <TagIcon size={8} />
+                                        {tag}
+                                    </span>
+                                ))}
+                                {tc.tags.length > 2 && <span className="text-[9px] text-slate-300 font-bold">+{tc.tags.length - 2}</span>}
+                            </div>
+                            
+                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                                <button 
+                                    onClick={(e) => handleDeleteClick(tc.id, e)}
+                                    className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                    title="Delete Case"
+                                >
+                                    <Trash2 size={13} />
+                                </button>
+                                <div className="p-1 text-slate-300">
+                                    <ChevronRight size={14} />
                                 </div>
                             </div>
                         </div>
-
-                        {/* Footer: Tags */}
-                        <div className="flex items-center gap-2 overflow-hidden mt-3 pt-3 border-t border-gray-100">
-                          <div className="flex flex-wrap gap-1.5 h-[24px] overflow-hidden content-center">
-                            {(tc.tags || []).length > 0 ? (
-                                (tc.tags || []).map(tag => (
-                                  <span key={tag} className="text-[10px] px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full border border-gray-200 truncate max-w-[100px]">
-                                    {tag}
-                                  </span>
-                                ))
-                            ) : (
-                              <span className="text-[10px] text-gray-400 italic">No tags</span>
-                            )}
-                          </div>
-                        </div>
+                        
+                        {tc.status === TestStatus.FAILING && (
+                            <div className="absolute -top-1.5 -right-1.5 flex h-4 items-center bg-red-600 text-white text-[8px] px-1.5 rounded-full font-black uppercase tracking-widest shadow-lg shadow-red-100">
+                                ERROR
+                            </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -581,5 +528,22 @@ const App: React.FC = () => {
     </div>
   );
 };
+
+const Loader2 = ({ className, size }: { className?: string, size?: number }) => (
+    <svg 
+        xmlns="http://www.w3.org/2000/svg" 
+        width={size || 24} 
+        height={size || 24} 
+        viewBox="0 0 24 24" 
+        fill="none" 
+        stroke="currentColor" 
+        strokeWidth="2.5" 
+        strokeLinecap="round" 
+        strokeLinejoin="round" 
+        className={className}
+    >
+        <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+    </svg>
+);
 
 export default App;
